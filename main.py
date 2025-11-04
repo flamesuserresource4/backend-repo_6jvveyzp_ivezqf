@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from urllib.parse import quote_plus
 
 app = FastAPI()
 
@@ -12,13 +14,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+class PromptRequest(BaseModel):
+    prompt: str
+
+
 @app.get("/")
 def read_root():
     return {"message": "Hello from FastAPI Backend!"}
 
+
 @app.get("/api/hello")
 def hello():
     return {"message": "Hello from the backend API!"}
+
+
+@app.post("/generate-image")
+def generate_image(body: PromptRequest):
+    """Return a generated image URL based on the prompt using a free image service.
+
+    Uses Pollinations image endpoint (no API key required) and returns a direct URL
+    that the frontend can display. This avoids storing images on the server.
+    """
+    # Build a descriptive prompt and encode safely for the URL
+    prompt = body.prompt.strip()
+    # You can tweak parameters below (model, size) as needed
+    encoded = quote_plus(prompt)
+    url = f"https://image.pollinations.ai/prompt/{encoded}"
+    return {"url": url}
+
 
 @app.get("/test")
 def test_database():
